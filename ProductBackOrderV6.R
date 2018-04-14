@@ -254,11 +254,7 @@ CreateFeatureSet3 <- function(PrductsData){
 CreateFeatureSet4 <- function(PrductsData){
   DataReduced<- DataReduction(PrductsData)
   DimReduced <- FeatureSelection1(DataReduced)
-  print(length(DimReduced[2]))
-  DimReduced1<-data.frame(DimReduced[2])
-  Normalized<- dataNormalization(DimReduced1)
-  list1<-DimReduced[1]
-  return(list(list1,Normalized))
+  Normalized<- dataNormalization(DimReduced)
 }
 CreateFeatureSet5 <- function(PrductsData,VIF_Imp_matrix){
   
@@ -359,12 +355,12 @@ head(RawTestData)
 tail(RawTestData)
 
 # Data understanding
-# .	Class imbalance (Only .67% volume of products went on back order)
-# .	lead_time has NA values 
-# .	Last Row has all NA values
-# .	Remove sku (all unique values)
-# .	perf_6_month_avg, perf_12_month_avg attributes have missing data with -99 values.
-# .	SKUs for which forecast and sales are 0 and the target class "Went to Back order is also "No". 
+# •	Class imbalance (Only .67% volume of products went on back order)
+# •	lead_time has NA values 
+# •	Last Row has all NA values
+# •	Remove sku (all unique values)
+# •	perf_6_month_avg, perf_12_month_avg attributes have missing data with -99 values.
+# •	SKUs for which forecast and sales are 0 and the target class “Went to Back order is also “No”. 
 
 
 
@@ -380,140 +376,104 @@ datavisualization(PrductsTrainData)
 FeatureSet1 <- CreateFeatureSet1(Imputed)
 FeatureSet2 <- CreateFeatureSet2(Imputed)
 FeatureSet3 <- CreateFeatureSet3(Imputed)
-FeatureSetList <- CreateFeatureSet4(Imputed)
-ReducedFeatures<-FeatureSetList[[1]][[1]]
-FeatureSet4 <-data.frame(FeatureSetList[[2]])
+FeatureSet4 <- CreateFeatureSet4(Imputed)
 
-VIF_Imp_matrix <- RunRF_VIF(FeatureSet4)
-FeatureSet5 <- CreateFeatureSet5(FeatureSet4,VIF_Imp_matrix)
-FeatureSet6 <- CreateFeatureSet6(FeatureSet4, VIF_Imp_matrix)
-# 
-# #----------balancing data-----------
-# if(!is.null(FeatureSet3))
-# {
-#   OverSampledData3<-BalanceDataSmote(FeatureSet3,3)
-#   UnderSampledData3<-BalanceDataUnder(FeatureSet3,3)
-# }
-# if(!is.null(FeatureSet4))
-# {
-#   OverSampledData4<-BalanceDataSmote(FeatureSet4,4)
-#   UnderSampledData4<-BalanceDataUnder(FeatureSet4,4)
-# }
-# if(!is.null(FeatureSet5))
-# {
-#   OverSampledData5<-BalanceDataSmote(FeatureSet5,5)
-#   UnderSampledData5<-BalanceDataUnder(FeatureSet5,5)
-# }
-# if(!is.null(FeatureSet6))
-# {
-#   OverSampledData6<-BalanceDataSmote(FeatureSet6,6)
-#   UnderSampledData6<-BalanceDataUnder(FeatureSet6,6)
-# }
-# if(!is.null(FeatureSet7))
-# {
-#   OverSampledData7<-BalanceDataSmote(FeatureSet7,7)
-#   UnderSampledData7<-BalanceDataUnder(FeatureSet7,7)
-# }
-# 
+#----------balancing data-----------
+if(!is.null(FeatureSet3))
+{
+  OverSampledData3<-BalanceDataSmote(FeatureSet3,3)
+  UnderSampledData3<-BalanceDataUnder(FeatureSet3,3)
+}
+if(!is.null(FeatureSet4))
+{
+  OverSampledData4<-BalanceDataSmote(FeatureSet4,4)
+  UnderSampledData4<-BalanceDataUnder(FeatureSet4,4)
+}
+
 # #---- Test Data cleaning and initial preparation----------------
-# PrductsTestData<-DataCleaning(RawTestData)
-# PrductsTestData<- DataImputation(PrductsTestData)
-# PrductsTestData<-dataTransformations(PrductsTestData)
-# PrductsTestData1<-PrductsTestData[,-ncol(PrductsTestData)]
-# PrductsTestData1<-dataNormalization(PrductsTestData1)
-# N_PrductsTestData<-dataTransformationNumeric(PrductsTestData)
-# #reducedTestData<-PrductsTestData[, !which(colnames(PrductsTestData) %in% ReducedFeatures)]
-# reducedTestData<-PrductsTestData[, -c(4,5,6,8,9,10,11,13)]
-# reducedTestData1<-reducedTestData[,-ncol(reducedTestData)]
-# reducedTestData1 <- dataNormalization(reducedTestData1)
-# 
-# 
-# # ## split into train and test--------------------
-# # list<-list.files(pattern = "\\.csv$")
-# # list1<-DataPartition(OverSampledData5, 0)
-# # trainSmote5<- as.data.frame(list1[1])
-# # valSmote5<-as.data.frame(list1[2])
-# # DataPartition(UnderSampledData, 1)
-# # trainUnder5<- as.data.frame(list1[1])
-# # valUnder5<-as.data.frame(list1[2])
-# 
-# #----------Run Models on feature set 3 balanced with Smote----------------
-# #---Use Cross validation for robust model
-# control <- trainControl(method="repeatedcv", number=5, repeats=3)
-# set.seed(7)
-# #---1. Logistic regression------------
-# fit.glm1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="glm", trControl=control)
-# varImp(fit.glm1)
-# fit.glm1$results
-# 
-# set.seed(7)
-# #---2. Decision Tree------------
-# fit.cart1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="rpart", trControl=control)
-# varImp(fit.cart1)
-# 
-# set.seed(7)
-# #---3. Random forest (ranger as variant in caret) ------------
-# fit.rf1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="ranger", trControl=control)
-# 
-# set.seed(7)
-# #---4. GBM------------
-# fit.gbm1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="gbm", trControl=control,verbose = FALSE)
-# 
-# set.seed(7)
-# #---5. XGBoost------------
-# fit.xgb1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="xgbTree", trControl=control,verbose = FALSE)
-# 
-# results1 <- resamples(list(GLM=fit.glm1,CART=fit.cart1, GBM=fit.gbm1, ranger=fit.rf1, XGB=fit.xgb1))
-# 
-# summary(results1)
-# 
-# 
-# #--First Take:  Model comparison Box plot for Accuracy and Kappa -----
-# scales <- list(x=list(relation="free"), y=list(relation="free"))
-# bwplot(results1, scales=scales)
-# 
-# 
-# #--Important metric in this case is FScore or AUC and not accuracy. Train models for other feature sets and compare----
-# 
-# #---- First Take: Predict on test data ------
-# #-- Confusion matrix of train data for logistic regression
-# caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.glm1),positive = "1")
-# 
-# test.glm <- predict(fit.glm1, newdata = PrductsTestData1)
-# #-- Confusion matrix of test data for logistic regression
-# ConfGLM<-confusionMatrix(data = test.glm , reference =PrductsTestData$went_on_backorder ,positive = "1")
-# #-- Confusion matrix of train data for Decision tree
-# caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.cart1),positive = "1")
-# test.CART <- predict(fit.cart1, newdata = PrductsTestData1)
-# #-- Confusion matrix of test data for Decision tree
-# ConfDT<-confusionMatrix(data = test.CART , reference =PrductsTestData$went_on_backorder ,positive = "1")
-# #-- Confusion matrix of train data for random forest
-# caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.rf1),positive = "1")
-# test.RF <- predict(fit.rf1, newdata = PrductsTestData1)
-# #-- Confusion matrix of test data for Random Forest
-# ConfRF<-confusionMatrix(data = test.RF , reference =PrductsTestData$went_on_backorder ,positive = "1")
-# #-- Confusion matrix of train data for GBM
-# caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.gbm1),positive = "1")
-# test.GBM <- predict(fit.gbm1, newdata = PrductsTestData1)
-# #-- Confusion matrix of test data for GBM
-# ConfGBM<-confusionMatrix(data = test.GBM , reference =PrductsTestData$went_on_backorder ,positive = "1")
-# #-- Confusion matrix of train data for XGBoost
-# caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.xgb1),positive = "1")
-# test.XGB <- predict(fit.xgb1, newdata = PrductsTestData1)
-# #-- Confusion matrix of test data for XGBoost
-# ConfXGB<-confusionMatrix(data = test.XGB , reference =PrductsTestData$went_on_backorder ,positive = "1")
-# 
-# #Compare the Results of all the models
-# ResultsConf<-cbind(ConfGLM$byClass,ConfDT$byClass)
-# ResultsConf<-cbind(ResultsConf,ConfRF$byClass)
-# ResultsConf<-cbind(ResultsConf,ConfGBM$byClass)
-# ResultsConf<-cbind(ResultsConf,ConfXGB$byClass)
-# print(ResultsConf)
-# 
-# # Calculate AUC for Test and compare for all the models
-# AUCTable<-AUCgrid(ConfGLM,"GLM")
-# AUCTable<- cbind(AUCTable,AUCgrid(ConfDT,"DT"))
-# AUCTable<- cbind(AUCTable,AUCgrid(ConfRF,"RF"))
-# AUCTable<- cbind(AUCTable,AUCgrid(ConfGBM,"GBM"))
-# AUCTable<- cbind(AUCTable,AUCgrid(ConfXGB,"XGB"))
-# print(AUCTable)
+PrductsTestData<-DataCleaning(RawTestData)
+PrductsTestData<- DataImputation(PrductsTestData)
+PrductsTestData<-dataTransformations(PrductsTestData)
+PrductsTestData1<-PrductsTestData[,-ncol(PrductsTestData)]
+PrductsTestData1<-dataNormalization(PrductsTestData1)
+
+#----------Run Models on feature set 3 balanced with Smote----------------
+#---Use Cross validation for robust model
+control <- trainControl(method="repeatedcv", number=5, repeats=3)
+set.seed(7)
+#---1. Logistic regression------------
+fit.glm1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="glm", trControl=control)
+varImp(fit.glm1)
+fit.glm1$results
+
+set.seed(7)
+#---2. Decision Tree------------
+fit.cart1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="rpart", trControl=control)
+varImp(fit.cart1)
+
+set.seed(7)
+#---3. Random forest (ranger as variant in caret) ------------
+fit.rf1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="ranger", trControl=control)
+
+set.seed(7)
+#---4. GBM------------
+fit.gbm1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="gbm", trControl=control,verbose = FALSE)
+
+set.seed(7)
+#---5. XGBoost------------
+fit.xgb1 <- caret::train(went_on_backorder~., data=OverSampledData3, method="xgbTree", trControl=control,verbose = FALSE)
+
+results1 <- resamples(list(GLM=fit.glm1,CART=fit.cart1, GBM=fit.gbm1, ranger=fit.rf1, XGB=fit.xgb1))
+
+summary(results1)
+
+
+#--First Take:  Model comparison Box plot for Accuracy and Kappa -----
+scales <- list(x=list(relation="free"), y=list(relation="free"))
+bwplot(results1, scales=scales)
+
+
+#--Important metric in this case is FScore or AUC and not accuracy. Train models for other feature sets and compare----
+
+#---- First Take: Predict on test data ------
+#-- Confusion matrix of train data for logistic regression
+caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.glm1),positive = "1")
+
+test.glm <- predict(fit.glm1, newdata = PrductsTestData1)
+#-- Confusion matrix of test data for logistic regression
+ConfGLM<-confusionMatrix(data = test.glm , reference =PrductsTestData$went_on_backorder ,positive = "1")
+#-- Confusion matrix of train data for Decision tree
+caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.cart1),positive = "1")
+test.CART <- predict(fit.cart1, newdata = PrductsTestData1)
+#-- Confusion matrix of test data for Decision tree
+ConfDT<-confusionMatrix(data = test.CART , reference =PrductsTestData$went_on_backorder ,positive = "1")
+#-- Confusion matrix of train data for random forest
+caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.rf1),positive = "1")
+test.RF <- predict(fit.rf1, newdata = PrductsTestData1)
+#-- Confusion matrix of test data for Random Forest
+ConfRF<-confusionMatrix(data = test.RF , reference =PrductsTestData$went_on_backorder ,positive = "1")
+#-- Confusion matrix of train data for GBM
+caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.gbm1),positive = "1")
+test.GBM <- predict(fit.gbm1, newdata = PrductsTestData1)
+#-- Confusion matrix of test data for GBM
+ConfGBM<-confusionMatrix(data = test.GBM , reference =PrductsTestData$went_on_backorder ,positive = "1")
+#-- Confusion matrix of train data for XGBoost
+caret::confusionMatrix(OverSampledData3$went_on_backorder,predict(fit.xgb1),positive = "1")
+test.XGB <- predict(fit.xgb1, newdata = PrductsTestData1)
+#-- Confusion matrix of test data for XGBoost
+ConfXGB<-confusionMatrix(data = test.XGB , reference =PrductsTestData$went_on_backorder ,positive = "1")
+
+#Compare the Results of all the models
+ResultsConf<-cbind(ConfGLM$byClass,ConfDT$byClass)
+ResultsConf<-cbind(ResultsConf,ConfRF$byClass)
+ResultsConf<-cbind(ResultsConf,ConfGBM$byClass)
+ResultsConf<-cbind(ResultsConf,ConfXGB$byClass)
+print(ResultsConf)
+
+# Calculate AUC for Test and compare for all the models
+AUCTable<-AUCgrid(ConfGLM,"GLM")
+AUCTable<- cbind(AUCTable,AUCgrid(ConfDT,"DT"))
+AUCTable<- cbind(AUCTable,AUCgrid(ConfRF,"RF"))
+AUCTable<- cbind(AUCTable,AUCgrid(ConfGBM,"GBM"))
+AUCTable<- cbind(AUCTable,AUCgrid(ConfXGB,"XGB"))
+print(AUCTable)
